@@ -105,20 +105,44 @@ module Mustache =
             match pi.NextNonNested() with
             | Some endIndex ->
                 //printfn "%i %i" pi.Position endIndex
-
+                
                 let token =
                     pi.GetSlice(pi.Position + 2, endIndex - 1)
                     |> Option.defaultValue ""
                     |> Token.Create
 
-                //printfn "%A" slice
+                // Chance to 'remove' (skip) trailing newlines from sections etc.
+                // For example:
+                //  Hello world!
+                //  {{! comment!}}
+                //
+                //  More text...
+                //
+                // Would render as
+                //  Hello World!
+                //
+                //
+                //  More text...
+                //
+                // Without this.
+                // TODO make configurable.
+                let newlineOffSet =
+                    match token with
+                    | Comment _ ->
+                        match pi.GetChar(endIndex + 2), pi.GetChar(endIndex + 3) with
+                        | Some c1, Some c2 when c1 = '\r' && c2 = '\n' -> 2
+                        | Some c1, _ when c1 = '\n' -> 1
+                        | _ -> 0
+                    | _ -> 0
+                    
+                    //printfn "%A" slice
 
                 let unmodified =
                     pi.GetSlice(lastSplit, pi.Position - 1)
                     |> Option.defaultValue ""
                     |> Token.Unmodified
 
-                parser (pi.SetPosition(endIndex + 1), tokens @ [ unmodified; token ], endIndex + 2)
+                parser (pi.SetPosition(endIndex + 1), tokens @ [ unmodified; token ], endIndex + 2 + newlineOffSet)
             | None -> parser (pi.Advance(1), tokens, lastSplit)
         | true, false -> parser (pi.Advance(1), tokens, lastSplit)
 
