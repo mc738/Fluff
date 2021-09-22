@@ -1,6 +1,7 @@
 ﻿namespace Fluff.Core
 
 open System.Diagnostics
+open System.Web
 
 [<RequireQualifiedAccess>]
 module Mustache =
@@ -180,7 +181,7 @@ module Mustache =
                         match data.TryFind s with
                         | Some v ->
                             match v.GetScalar() with
-                            | Ok vs -> (acc @ [ vs ], mode)
+                            | Ok vs -> (acc @ [ HttpUtility.HtmlEncode vs ], mode)
                             | Error _ -> (acc @ [ "" ], mode)
                         | None -> (acc @ [ "" ], mode)
                     | NonEscapedVariable s ->
