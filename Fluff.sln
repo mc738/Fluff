@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Fluff.Core", "Fluff.Core\Fluff.Core.fsproj", "{0E988732-74F1-4A80-9A0A-64E482E6866D}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Fluff.App", "Fluff.App\Fluff.App.fsproj", "{CDE341B9-FAD8-4654-9203-28F3E29813EE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0E988732-74F1-4A80-9A0A-64E482E6866D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0E988732-74F1-4A80-9A0A-64E482E6866D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0E988732-74F1-4A80-9A0A-64E482E6866D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0E988732-74F1-4A80-9A0A-64E482E6866D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CDE341B9-FAD8-4654-9203-28F3E29813EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CDE341B9-FAD8-4654-9203-28F3E29813EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CDE341B9-FAD8-4654-9203-28F3E29813EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CDE341B9-FAD8-4654-9203-28F3E29813EE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
