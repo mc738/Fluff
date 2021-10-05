@@ -4,6 +4,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Fluff.Core", "Fluff.Core\Fl
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Fluff.App", "Fluff.App\Fluff.App.fsproj", "{CDE341B9-FAD8-4654-9203-28F3E29813EE}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Fluff.Razor", "Fluff.Razor\Fluff.Razor.fsproj", "{7885F16B-7A0F-407D-BCAF-BA9EBA9669D3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{CDE341B9-FAD8-4654-9203-28F3E29813EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CDE341B9-FAD8-4654-9203-28F3E29813EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CDE341B9-FAD8-4654-9203-28F3E29813EE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7885F16B-7A0F-407D-BCAF-BA9EBA9669D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7885F16B-7A0F-407D-BCAF-BA9EBA9669D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7885F16B-7A0F-407D-BCAF-BA9EBA9669D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7885F16B-7A0F-407D-BCAF-BA9EBA9669D3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
