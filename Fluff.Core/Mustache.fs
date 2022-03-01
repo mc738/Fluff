@@ -2,6 +2,7 @@
 
 open System.Diagnostics
 open System.Web
+open Fluff.Core
 
 [<RequireQualifiedAccess>]
 module Mustache =
@@ -96,7 +97,7 @@ module Mustache =
         member d.TryFind(key) = d.Values.TryFind key
 
     let rec parser (pi: ParsableInput, tokens: Token list, lastSplit: int) =
-        printfn "%A" pi.CurrentChar
+        //printfn "%A" pi.CurrentChar
 
         match pi.InBounds(), pi.Is2Chars('{', '{') with
         | false, _ ->
@@ -106,7 +107,7 @@ module Mustache =
             match pi.NextNonNested() with
             | Some endIndex ->
                 //printfn "%i %i" pi.Position endIndex
-                
+
                 let token =
                     pi.GetSlice(pi.Position + 2, endIndex - 1)
                     |> Option.defaultValue ""
@@ -135,8 +136,8 @@ module Mustache =
                         | Some c1, _ when c1 = '\n' -> 1
                         | _ -> 0
                     | _ -> 0
-                    
-                    //printfn "%A" slice
+
+                //printfn "%A" slice
 
                 let unmodified =
                     pi.GetSlice(lastSplit, pi.Position - 1)
@@ -162,8 +163,11 @@ module Mustache =
         { Name: string
           Inverted: bool
           Tokens: Token list }
-        
-        member cs.Add(token) = { cs with Tokens = cs.Tokens @ [ token ] } |> Mode.Collect
+
+        member cs.Add(token) =
+            { cs with
+                  Tokens = cs.Tokens @ [ token ] }
+            |> Mode.Collect
 
     and Mode =
         | Process
@@ -191,8 +195,20 @@ module Mustache =
                             | Ok vs -> (acc @ [ vs ], mode)
                             | Error _ -> (acc @ [ "" ], mode)
                         | None -> (acc @ [ "" ], mode)
-                    | SectionStart s -> acc, Mode.Collect({Name = s; Inverted = false; Tokens = []})
-                    | InvertedSectionStart s -> acc, Mode.Collect({Name = s; Inverted = true; Tokens = []})
+                    | SectionStart s ->
+                        acc,
+                        Mode.Collect(
+                            { Name = s
+                              Inverted = false
+                              Tokens = [] }
+                        )
+                    | InvertedSectionStart s ->
+                        acc,
+                        Mode.Collect(
+                            { Name = s
+                              Inverted = true
+                              Tokens = [] }
+                        )
                     | SectionEnd s -> acc, mode // Don't do anything, this should be handled in collect mode.
                     | Comment c -> acc, mode
                     | Partial p -> failwith "TODO"
@@ -202,7 +218,18 @@ module Mustache =
                     | SectionEnd s when s = c.Name ->
                         let r =
                             match c.Inverted with
-                            | true -> data.TryFind s |> Option.bind (fun _ -> Some "") |> Option.defaultWith (fun _ -> replace data lint c.Tokens) 
+                            | true ->
+                                // TODO this should also check for empty lists.
+                                data.TryFind s
+                                |> Option.bind
+                                    (fun v ->
+                                        match v with
+                                        | Value.Array a ->
+                                            match a.IsEmpty with
+                                            | true -> None
+                                            | false -> Some ""
+                                        | _ -> Some "")
+                                |> Option.defaultWith (fun _ -> replace data lint c.Tokens)
                             | false ->
                                 // Process collection.
                                 match data.TryFind s with
@@ -210,21 +237,23 @@ module Mustache =
                                     match v.GetArray() with
                                     | Ok a ->
                                         a
-                                        |> List.map (fun v ->
-                                            match v.GetObject() with
-                                            | Ok o -> replace { Values = o; Partials = data.Partials } lint c.Tokens 
-                                            | Error _ -> "")
+                                        |> List.map
+                                            (fun v ->
+                                                match v.GetObject() with
+                                                | Ok o -> replace { Values = o; Partials = data.Partials } lint c.Tokens
+                                                | Error _ -> "")
                                         |> String.concat ""
                                     | Error _ -> "" // This should not happen.
                                 | Some v when v.IsObjectType ->
                                     match v.GetObject() with
-                                    | Ok o -> replace { Values = o; Partials = data.Partials } lint c.Tokens 
+                                    | Ok o -> replace { Values = o; Partials = data.Partials } lint c.Tokens
                                     | Error _ -> "" // This should not happen.
                                 | Some v when v.IsLambdaType ->
                                     match v.GetLambda() with
                                     | Ok l -> l data.Values c.Tokens
                                     | Error _ -> ""
                                 | _ -> ""
+
                         (acc @ [ r ], Process)
                     | _ -> (acc, c.Add t))
             ([], Mode.Process)

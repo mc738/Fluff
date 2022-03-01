@@ -4,7 +4,6 @@ open System
 open System.IO
 open Fluff.Core
 open Fluff.Core.Svg
-open Fluff.Core.Svg.Charts
 
 // Define a function to construct a message to print
 let from whom = sprintf "from %s" whom
@@ -58,10 +57,12 @@ let svgTest _ =
           CurrentIndex = 0 }
 
     points
-    |> createBezierCommand
+    |> Lines.createBezierCommand
     |> boilerPlate
     |> (fun svg -> File.WriteAllText("C:\\ProjectData\\TestSvgs\\test.svg", svg))
 
+
+(*
 let chartTest _ =
     {
         MinValue = 0m
@@ -82,16 +83,29 @@ let chartTest _ =
         ]
     }.ToChart({ Margin = 20; ViewBoxHeight = 100; ViewBoxWidth = 100 })
     |> (fun svg -> File.WriteAllText("C:\\ProjectData\\TestSvgs\\test_chart.svg", svg))
+*)  
     
     
+let pieChartTest _ =
+    let center = { X = 50; Y = 50 }
+    let radius = 40.
     
+    [
+        0., 45., "blue"
+        45., 120., "green"
+        120., 220., "yellow"
+        220., 300., "orange"
+        300., 0., "pink"
+    ]
+    |> List.map (fun (startAngle, endAngle, color) -> PieCharts.createPath center radius startAngle endAngle color true)
+    |> fun r -> r |> String.concat Environment.NewLine |> boilerPlate
+    |> (fun svg -> File.WriteAllText("C:\\ProjectData\\TestSvgs\\test_pie_chart.svg", svg))
     
-    
-
 [<EntryPoint>]
 let main argv =
 
-    chartTest ()
+    pieChartTest ()
+    //chartTest ()
     //svgTest ()
     
     0 // return an integer exit code
