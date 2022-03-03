@@ -4,6 +4,7 @@ open System
 open System.IO
 open Fluff.Core
 open Fluff.Core.Svg
+open Fluff.Core.Charts
 
 // Define a function to construct a message to print
 let from whom = sprintf "from %s" whom
@@ -58,7 +59,7 @@ let svgTest _ =
 
     points
     |> Lines.createBezierCommand
-    |> boilerPlate
+    |> boilerPlate true
     |> (fun svg -> File.WriteAllText("C:\\ProjectData\\TestSvgs\\test.svg", svg))
 
 
@@ -79,33 +80,89 @@ let chartTest _ =
             800000m
             600000m
             700000m
-            500000m           
+            500000m
         ]
     }.ToChart({ Margin = 20; ViewBoxHeight = 100; ViewBoxWidth = 100 })
     |> (fun svg -> File.WriteAllText("C:\\ProjectData\\TestSvgs\\test_chart.svg", svg))
-*)  
-    
-    
+*)
+
+
 let pieChartTest _ =
     let center = { X = 50; Y = 50 }
     let radius = 40.
-    
-    [
-        0., 45., "blue"
-        45., 120., "green"
-        120., 220., "yellow"
-        220., 300., "orange"
-        300., 0., "pink"
-    ]
+
+    [ 0., 45., "blue"
+      45., 120., "green"
+      120., 220., "yellow"
+      220., 300., "orange"
+      300., 0., "pink" ]
     |> List.map (fun (startAngle, endAngle, color) -> PieCharts.createPath center radius startAngle endAngle color true)
-    |> fun r -> r |> String.concat Environment.NewLine |> boilerPlate
+    |> fun r ->
+        r
+        |> String.concat Environment.NewLine
+        |> boilerPlate true
     |> (fun svg -> File.WriteAllText("C:\\ProjectData\\TestSvgs\\test_pie_chart.svg", svg))
-    
+
+
+let barChartTest _ =
+    let settings =
+        ({ LeftOffset = 10
+           BottomOffset = 10
+           TopOffset = 10
+           RightOffset = 10
+           Title = None
+           XLabel = None
+           YMajorMarks = []
+           YMinorMarks = [] }: BarCharts.Settings)
+
+
+    let series =
+        ({ Normalizer = fun p -> (float  p.Value / float p.MaxValue) * 100. |> int
+           SplitValueHandler =
+               fun percent maxValue ->
+                   (float maxValue / float 100) * float percent
+                   |> int
+                   |> fun r -> r.ToString()
+           Bars =
+               [ { Name = "Item 1"
+                   Value = 20
+                   Color = "red" }
+                 { Name = "Item 2"
+                   Value = 40
+                   Color = "green" }
+                 { Name = "Item 3"
+                   Value = 30
+                   Color = "blue" }
+                 { Name = "Item 4"
+                   Value = 70
+                   Color = "orange" }
+                 { Name = "Item 5"
+                   Value = 80
+                   Color = "pink" } ] }: BarCharts.Series<int>)
+
+    BarCharts.generate settings series 80
+
+(*
+    let width = 20
+    let maxHeight = 80
+
+    [
+        { X = 10; Y = 90 }, 50
+        { X = 30; Y = 90 }, 25
+        { X = 50; Y = 90 }, 10
+        { X = 70; Y = 90 }, 100
+    ]
+    |> List.map (fun (start, value) -> BarCharts.generateBar start width maxHeight value)
+    |> fun r -> r @ [ BarCharts.createXAxis 90 10 80; BarCharts.createYAxis 10 10 80 ] |> String.concat Environment.NewLine |> boilerPlate
+    |> (fun svg -> File.WriteAllText("C:\\ProjectData\\TestSvgs\\test_bar_chart.svg", svg))
+    *)
+
 [<EntryPoint>]
 let main argv =
 
     pieChartTest ()
+    barChartTest ()
     //chartTest ()
     //svgTest ()
-    
+
     0 // return an integer exit code

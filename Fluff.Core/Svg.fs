@@ -1,6 +1,7 @@
 ﻿namespace Fluff.Core
 
 open System
+open System.IO
 
 module Svg =
 
@@ -40,11 +41,6 @@ module Svg =
                     |> Some
                 | false -> None
 
-        let boilerPlate content =
-            $"""
-            <svg viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" class="svg">
-                {content}
-            </svg>"""
 
         /// Embed roboto font.
         let defs =
@@ -62,6 +58,25 @@ module Svg =
             </style>
         </defs>
         """
+
+        let boilerPlate includeDefs content =
+            $"""
+            <svg viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" class="svg">
+                {match includeDefs with
+                 | true -> defs
+                 | false -> String.Empty}
+                {content}
+            </svg>"""
+
+
+        /// Save content as a standalone svg file.
+        let saveSvg (path: string) (content: string) =
+            $"""
+            <svg viewBox="0 0 100 100" version="1.1" xmlns="http://www.w3.org/2000/svg" class="svg">
+                {defs}
+                {content}
+            </svg>"""
+            |> fun svg -> File.WriteAllText(path, svg)
 
 
     [<RequireQualifiedAccess>]
@@ -119,150 +134,3 @@ module Svg =
 
                         $"C {startP.X} {startP.Y} {endP.X} {endP.Y} {p.X} {p.Y}")
             |> String.concat " "
-
-    [<RequireQualifiedAccess>]
-    module LineCharts =
-
-        type Settings =
-            { Margin: int
-              ViewBoxHeight: int
-              ViewBoxWidth: int }
-
-        type Series =
-            { MinValue: decimal
-              MaxValue: decimal
-              Values: decimal list }
-
-            member s.ToPoints(settings: Settings) =
-                // Assuming min is 0 for now.
-
-                let diff = s.MaxValue - s.MinValue
-
-                let h =
-                    settings.ViewBoxHeight - (settings.Margin * 2)
-
-                let w =
-                    settings.ViewBoxWidth - (settings.Margin * 2)
-
-                let stepSize = w / (s.Values.Length - 1)
-
-                s.Values
-                |> List.mapi
-                    (fun i v ->
-                        // Value Percent
-
-                        let invertedY =
-                            settings.Margin
-                            + int (((diff - v) / diff) * (decimal h))
-
-                        let extra =
-                            match i = 0 with
-                            | true -> 0
-                            | false -> stepSize / (s.Values.Length - 1)
-
-                        { X = settings.Margin + (stepSize * i) + extra
-                          Y = invertedY })
-                |> fun p ->
-                    { Values = p |> Array.ofList
-                      CurrentIndex = 0 }
-                |> Lines.createBezierCommand
-
-            member s.ToChart(settings: Settings) =
-                // Assuming min is 0 for now.
-
-                let diff = s.MaxValue - s.MinValue
-
-                let h =
-                    settings.ViewBoxHeight - (settings.Margin * 2)
-
-                let w =
-                    settings.ViewBoxWidth - (settings.Margin * 2)
-
-                let stepSize = w / (s.Values.Length - 1)
-
-                s.ToPoints settings
-                |> fun c ->
-                    let min = settings.Margin
-                    let maxW = settings.ViewBoxWidth - settings.Margin
-                    let maxH = settings.ViewBoxHeight - settings.Margin
-
-                    let test =
-                        $"""<path d="{c} L {maxW - stepSize} {maxH} L {min} {maxH} Z" fill="rgba(255,0,0,0.1)" stroke="none" style="stroke-width: 0.3" />"""
-
-                    let xMarks =
-                        s.Values
-                        |> List.mapi
-                            (fun i _ ->
-                                $"""<path d="M {settings.Margin + (stepSize * i)} {maxH + 1} L {settings.Margin + (stepSize * i)} {min}" fill="none" stroke="grey" style="stroke-width: 0.1" />
-                                    <text x="{settings.Margin + (stepSize * i)}" y="{maxH + 3}" style="font-size: 2px; text-anchor: middle; font-family: 'roboto'">{i + 1}</text>""")
-                        |> String.concat Environment.NewLine
-
-                    let yMarks =
-                        let getValueLabel (v: decimal) =
-                            match v with
-                            | _ when v > 999m && v < 1000000m -> $"£{int v / 1000}k"
-                            | _ when v > 999999m -> $"£{int v / 1000000}m"
-                            | _ -> $"£{v}"
-
-                        let minLabel = getValueLabel s.MinValue
-                        let midLabel = getValueLabel (s.MaxValue / 2m)
-                        let maxLabel = getValueLabel s.MaxValue
-
-                        let mid = ((maxH - min) / 2) + settings.Margin
-
-                        $"""
-                               <path d="M {min - 1} {maxH} L {min} {maxH}" fill="none" stroke="grey" style="stroke-width: 0.2" />
-                               <text x="{min - 2}" y="{maxH}" style="font-size: 2px; text-anchor: end; font-family: 'roboto'; transform: translateY(0.5px);">{minLabel}</text>
-                               <path d="M {min - 1} {mid} L {min} {mid}" fill="none" stroke="grey" style="stroke-width: 0.2" />
-                               <text x="{min - 2}" y="{mid}" style="font-size: 2px; text-anchor: end; font-family: 'roboto'; transform: translateY(0.5px);">{midLabel}</text>
-                               <path d="M {min - 1} {min} L {min} {min}" fill="none" stroke="grey" style="stroke-width: 0.2" />
-                               <text x="{min - 2}" y="{min}" style="font-size: 2px; text-anchor: end; font-family: 'roboto'; transform: translateY(0.5px);">{maxLabel}</text>
-                            """
-
-                    //[ s.MinValue; s.MaxValue / 2m; s.MaxValue ]
-                    //|>
-
-                    $"""<svg viewBox="0 0 {settings.ViewBoxWidth} {settings.ViewBoxHeight}" version="1.1" xmlns="http://www.w3.org/2000/svg" class="svg">
-                                {defs}
-                                <path d="M {min} {min} L {min} {maxH}" fill="none" stroke="grey" style="stroke-width: 0.2" />
-                                <path d="M {min} {maxH} L {maxW - stepSize} {maxH}" fill="none" stroke="grey" style="stroke-width: 0.2" />
-                                {xMarks}
-                                {yMarks}
-                                <path d="{c}" fill="none" stroke="grey" style="stroke-width: 0.3" />
-                                {test}
-                            </svg>"""
-
-        let createYAxis =
-            """<path d="M 0 0 L 100 0" fill="none" stroke="grey" />"""
-
-        let createXAxis =
-            """<path d="M 100 0 L 100 100" fill="none" stroke="grey" />"""
-
-    [<RequireQualifiedAccess>]
-    module PieCharts =
-        
-        //type PTC = { X: int; Y: float  }
-        
-        let ptc (center: Point) (radius: float) (angleInDegrees: float) =
-            let angleInRadians = (angleInDegrees - 90.) * Math.PI /180.
-            let x = center.X + (int (radius * Math.Cos(angleInRadians)))
-            let y = center.Y + (int (radius * Math.Sin(angleInRadians)))
-            
-            ({ X = x; Y = y }: Point)
-            
-        let createSlice (center: Point) (radius: float) (startAngle: float) (endAngle: float) (isDonut: bool) =
-            let start = ptc center radius endAngle
-            let endP = ptc center radius startAngle 
-            let largeArchFlag = if endAngle - startAngle <= 180 then 0 else 1
-            
-            match isDonut with
-            | true ->
-                let innerStart = ptc center (radius / 2.) endAngle            
-                let innerEnd = ptc center (radius / 2.) startAngle
-                $"M {start.X} {start.Y} A {radius} {radius} 0 {largeArchFlag} {0} {endP.X} {endP.Y} M {start.X} {start.Y} L {innerStart.X} {innerStart.Y} A {radius / 2.} {radius / 2.} 0 {largeArchFlag} {0} {innerEnd.X} {innerEnd.Y} L {endP.X} {endP.Y} z"
-            | false -> $"M {start.X} {start.Y} A {radius} {radius} 0 {largeArchFlag} {0} {endP.X} {endP.Y} L {center.X} {center.Y} z"
-        let createPath center radius startAngle endAngle color isDonut =
-            let cmd = createSlice center radius startAngle endAngle isDonut
-            $"<path d=\"{cmd}\" fill=\"{color}\" stroke=\"{color}\" stroke-width=\"0\"></path>"
-        
-        
