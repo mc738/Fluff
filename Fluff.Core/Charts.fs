@@ -153,6 +153,18 @@ module Charts =
     [<RequireQualifiedAccess>]
     module PieCharts =
 
+        type Handlers<'T> =
+            { Normalizer: ValueNormalizer<'T>
+              MaxValue: ValueSeries<'T> -> 'T }
+
+        type Settings =
+            { BottomOffset: int
+              LeftOffset: int
+              TopOffset: int
+              RightOffset: int
+              Title: string option
+              IsDonut: bool }
+
         //type PTC = { X: int; Y: float  }
 
         let ptc (center: Point) (radius: float) (angleInDegrees: float) =
@@ -192,6 +204,46 @@ module Charts =
 
             $"<path d=\"{cmd}\" fill=\"{color}\" stroke=\"{color}\" stroke-width=\"0\"></path>"
 
+        let generate (settings: Settings) (handlers: Handlers<'T>) (series: ValueSeries<'T>) =
+            // Normalize value (to % basically)
+            // multiply by 3.6 to get degrees.
+
+            // Fold over series slices, use last one and current one as points
+            let height =
+                100 - settings.TopOffset - settings.BottomOffset
+
+            let width =
+                100 - settings.LeftOffset - settings.RightOffset
+
+            let center =
+                { X = width / 2 + settings.LeftOffset
+                  Y = height / 2 + settings.TopOffset }
+
+            let radius = width / 2
+            let maxValue = handlers.MaxValue series
+
+            let toDeg (value: int) = float value * 3.6
+
+            series.Items
+            |> List.fold
+                (fun (acc, prevAngle) vsi ->
+                    let value =
+                        handlers.Normalizer { MaxValue = maxValue; Value = vsi.Value }
+
+                    let newAngle = prevAngle + (toDeg value)
+
+                    printfn $"{value} {prevAngle} {newAngle}"
+                    
+                    acc
+                    @ [ createPath center radius prevAngle newAngle vsi.Color settings.IsDonut ],
+                    newAngle)
+                ([], 0)
+            |> fun (acc, _) ->
+                String.concat Environment.NewLine acc
+                |> boilerPlate true
+            |> fun svg -> File.WriteAllText("C:\\ProjectData\\TestSvgs\\test_pie_chart.svg", svg)
+
+
     [<RequireQualifiedAccess>]
     module BarCharts =
 
@@ -226,8 +278,6 @@ module Charts =
             =
             let height =
                 (float normalizedValue / 100.) * float maxHeight
-
-            printfn $"Height: {height}"
 
             $"""<rect width="{width}" height="{height}" x="{startPoint.X}" y="{float startPoint.Y - height}" fill="{color}" />
                 <text x="{float startPoint.X + (float width / 2.)}" y="{float startPoint.Y - height - 2.}" style="font-size: 2px; text-anchor: middle; font-family: 'roboto'">{valueLabel}</text>"""

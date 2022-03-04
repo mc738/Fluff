@@ -103,6 +103,41 @@ let pieChartTest _ =
         |> boilerPlate true
     |> (fun svg -> File.WriteAllText("C:\\ProjectData\\TestSvgs\\test_pie_chart.svg", svg))
 
+    let series =
+        ({ Items =
+               [ { Name = "Item 1"
+                   Value = 12
+                   Color = "green" }
+                 { Name = "Item 2"
+                   Value = 13
+                   Color = "orange" }
+                 { Name = "Item 3"
+                   Value = 25
+                   Color = "blue" }
+                 { Name = "Item 4"
+                   Value = 30
+                   Color = "pink" }
+                 { Name = "Item 5"
+                   Value = 20
+                   Color = "yellow" } ] }: ValueSeries<int>)
+        
+    let settings = ({
+       LeftOffset = 10
+       BottomOffset = 10
+       TopOffset = 10
+       RightOffset = 10
+       Title = None
+       IsDonut = true
+    }: PieCharts.Settings)
+    
+    let handlers = ({
+        Normalizer = fun p -> (float p.Value / float p.MaxValue) * 100. |> int
+        MaxValue = fun vs -> vs.Items |> List.sumBy (fun i -> i.Value) 
+    }: PieCharts.Handlers<int>)
+    
+    PieCharts.generate settings handlers series
+  
+
 
 let barChartTest _ =
     let settings =
@@ -117,7 +152,7 @@ let barChartTest _ =
 
 
     let series =
-        ({ Normalizer = fun p -> (float  p.Value / float p.MaxValue) * 100. |> int
+        ({ Normalizer = fun p -> (float p.Value / float p.MaxValue) * 100. |> int
            SplitValueHandler =
                fun percent maxValue ->
                    (float maxValue / float 100) * float percent
