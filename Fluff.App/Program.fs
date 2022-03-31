@@ -137,8 +137,6 @@ let pieChartTest _ =
     
     PieCharts.generate settings handlers series
   
-
-
 let barChartTest _ =
     let settings =
         ({ LeftOffset = 10
@@ -177,26 +175,48 @@ let barChartTest _ =
 
     BarCharts.generate settings series 80
 
-(*
-    let width = 20
-    let maxHeight = 80
+let lineChartTest _ =
+    let settings =
+        ({ LeftOffset = 10
+           BottomOffset = 10
+           TopOffset = 10
+           RightOffset = 10
+           Title = None
+           XLabel = None
+           YMajorMarks = []
+           YMinorMarks = [] }: LineCharts.Settings)
+        
+    let series =
+        ({ Normalizer = fun p -> (float p.Value / float p.MaxValue) * 100. |> int
+           SplitValueHandler =
+               fun percent maxValue ->
+                   (float maxValue / float 100) * float percent
+                   |> int
+                   |> fun r -> r.ToString()
+           Points =
+               [ { Name = "Item 1"
+                   Value = 20 }
+                 { Name = "Item 2"
+                   Value = 40 }
+                 { Name = "Item 3"
+                   Value = 30 }
+                 { Name = "Item 4"
+                   Value = 70 }
+                 { Name = "Item 5"
+                   Value = 80 } ] }: LineCharts.Series<int>)
+        
+    LineCharts.generate settings series 100
 
-    [
-        { X = 10; Y = 90 }, 50
-        { X = 30; Y = 90 }, 25
-        { X = 50; Y = 90 }, 10
-        { X = 70; Y = 90 }, 100
-    ]
-    |> List.map (fun (start, value) -> BarCharts.generateBar start width maxHeight value)
-    |> fun r -> r @ [ BarCharts.createXAxis 90 10 80; BarCharts.createYAxis 10 10 80 ] |> String.concat Environment.NewLine |> boilerPlate
-    |> (fun svg -> File.WriteAllText("C:\\ProjectData\\TestSvgs\\test_bar_chart.svg", svg))
-    *)
+    
+    
+    ()
 
 [<EntryPoint>]
 let main argv =
 
     pieChartTest ()
     barChartTest ()
+    lineChartTest ()
     //chartTest ()
     //svgTest ()
 

@@ -33,7 +33,7 @@ module Charts =
               Color: string }
 
     [<RequireQualifiedAccess>]
-    module LineCharts =
+    module LineChartsOld =
 
         type Settings =
             { Margin: int
@@ -151,6 +151,167 @@ module Charts =
             """<path d="M 100 0 L 100 100" fill="none" stroke="grey" />"""
 
     [<RequireQualifiedAccess>]
+    module LineCharts =
+
+        type Series<'T> =
+            { Normalizer: ValueNormalizer<'T>
+              //ToString: 'T -> string
+              SplitValueHandler: int -> 'T -> string
+              Points: LineChartPoint<'T> list }
+
+        and LineChartPoint<'T> = { Name: string; Value: 'T }
+
+        type Settings =
+            { BottomOffset: int
+              LeftOffset: int
+              TopOffset: int
+              RightOffset: int
+              Title: string option
+              XLabel: string option
+              YMajorMarks: int list
+              YMinorMarks: int list }
+
+        let createTitle (settings: Settings) (width: int) =
+            match settings.Title with
+            | Some title ->
+                $"""<text x="{settings.LeftOffset + (width / 2)}" y="{5}" style="font-size: 4px; text-anchor: middle; font-family: 'roboto'">{title}</text>"""
+            | None -> String.Empty
+
+        let createXMarks (settings: Settings) (series: Series<'T>) (height: int) (barWidth: int) =
+            let height = height + settings.TopOffset
+
+            series.Points
+            |> List.mapi
+                (fun i p ->
+                    $"""<path d="M {settings.LeftOffset + (barWidth * i)} {height + 1} L {settings.LeftOffset + (barWidth * i)} {height}" fill="none" stroke="grey" style="stroke-width: 0.1" />
+                        <text x="{settings.LeftOffset
+                                  + (barWidth * i)
+                                  + (barWidth / 2)}" y="{height + 3}" style="font-size: 2px; text-anchor: middle; font-family: 'roboto'">{p.Name}</text>""")
+            |> String.concat Environment.NewLine
+
+        let createXLabel (settings: Settings) (height: int) (width: int) =
+            match settings.XLabel with
+            | Some label ->
+                let height = height + settings.TopOffset
+                $"""<text x="{settings.LeftOffset + (width / 2)}" y="{height + 6}" style="font-size: 2px; text-anchor: middle; font-family: 'roboto'">{label}</text>"""
+            | None -> String.Empty
+
+        let createYMarks (settings: Settings) (height: int) (width: int) (maxValue: 'T) (series: Series<'T>) =
+            let major =
+                settings.YMajorMarks
+                |> List.map
+                    (fun m ->
+                        let y =
+                            float (height + settings.TopOffset)
+                            - ((float m / 100.) * float height) // + settings.TopOffset
+                        //(float normalizedValue / 100.) * float maxHeight
+                        let value = series.SplitValueHandler m maxValue
+
+                        $"""<path d="M {settings.LeftOffset - 1} {y} L {width + settings.LeftOffset} {y}" fill="none" stroke="grey" style="stroke-width: 0.2" />
+                            <text x="{8}" y="{y + 0.5}" style="font-size: 2px; text-anchor: end; font-family: 'roboto'">{value}</text>""")
+                |> String.concat Environment.NewLine
+
+
+            let minor =
+                settings.YMinorMarks
+                |> List.map
+                    (fun m ->
+                        let y =
+                            float (height + settings.TopOffset)
+                            - ((float m / 100.) * float height) // + settings.TopOffset
+                        //(float normalizedValue / 100.) * float maxHeight
+                        let value = series.SplitValueHandler m maxValue
+
+                        $"""<path d="M {settings.LeftOffset - 1} {y} L {width + settings.LeftOffset} {y}" fill="none" stroke="grey" style="stroke-width: 0.1" />
+                            <text x="{8}" y="{y + 0.5}" style="font-size: 2px; text-anchor: end; font-family: 'roboto'">{value}</text>""")
+                |> String.concat Environment.NewLine
+
+            [ major; minor ]
+            |> String.concat Environment.NewLine
+
+        let createYAxis (bottomOffset: int) (leftOffset: int) (height: int) =
+            $"""<path d="M {leftOffset} {bottomOffset} L {leftOffset} {bottomOffset + height}" fill="none" stroke="grey" stroke-width="0.2" />"""
+
+        let createXAxis (height: int) (leftOffset: int) (length: int) =
+            $"""<path d="M {leftOffset} {height} L {leftOffset + length} {height}" fill="none" stroke="grey" stroke-width="0.2" />"""
+        
+        let generatePoint
+            (startPoint: Point)
+            (width: int)
+            (maxHeight: int)
+            (normalizedValue: int)
+            (color: string)
+            (valueLabel: string)
+            =
+            let height =
+                (float normalizedValue / 100.) * float maxHeight
+
+            $"""<rect width="{width}" height="{height}" x="{startPoint.X}" y="{float startPoint.Y - height}" fill="{color}" />
+                <text x="{float startPoint.X + (float width / 2.)}" y="{float startPoint.Y - height - 2.}" style="font-size: 2px; text-anchor: middle; font-family: 'roboto'">{valueLabel}</text>"""
+
+        let generate (settings: Settings) (series: Series<'T>) (maxValue: 'T) =
+            let height =
+                100 - settings.TopOffset - settings.BottomOffset
+
+            let width =
+                100 - settings.LeftOffset - settings.RightOffset
+            // TODO might need to make float
+            let pointWidth = width / series.Points.Length
+
+            let chart =
+                [ createTitle settings width
+                  createXAxis 90 10 80
+                  createYAxis 10 10 80
+                  createXMarks settings series height pointWidth
+                  createXLabel settings height width
+                  createYMarks settings height width maxValue series ]
+
+            
+            series.Points
+            |> List.mapi
+                (fun i p ->
+                    let value =
+                        series.Normalizer
+                            { MaxValue = maxValue
+                              Value = p.Value }
+
+                    
+                    // Invert y
+                    
+                    // h / 100 * (
+                    
+                    let invertedY =
+                            settings.BottomOffset
+                            + int ((decimal (100 - value) / decimal 100) * (decimal height))
+                    
+                    (*
+                    let invertedY =
+                            settings.BottomOffset
+                            + (int(float (100 - value) / float 100)) * height
+                    *)
+                    
+                    { X = settings.LeftOffset + (i * pointWidth)
+                      Y = invertedY })
+            |> fun p ->
+                    { Values = p |> Array.ofList
+                      CurrentIndex = 0 }
+            |> Lines.createBezierCommand
+            |> fun r -> [ $"""<path d="{r}" fill="none" stroke="grey" style="stroke-width: 0.3" />""" ]
+            
+            //|> List.map
+            //    (fun (start, value, valueLabel) ->
+                    
+                
+            //        generateBar start barWidth height value valueLabel)
+            //[ "" ]
+            |> fun r ->
+                chart @ r
+                |> String.concat Environment.NewLine
+                |> boilerPlate true
+            |> fun svg -> File.WriteAllText("C:\\ProjectData\\TestSvgs\\test_line_chart.svg", svg)
+
+
+    [<RequireQualifiedAccess>]
     module PieCharts =
 
         type Handlers<'T> =
@@ -228,12 +389,14 @@ module Charts =
             |> List.fold
                 (fun (acc, prevAngle) vsi ->
                     let value =
-                        handlers.Normalizer { MaxValue = maxValue; Value = vsi.Value }
+                        handlers.Normalizer
+                            { MaxValue = maxValue
+                              Value = vsi.Value }
 
                     let newAngle = prevAngle + (toDeg value)
 
                     printfn $"{value} {prevAngle} {newAngle}"
-                    
+
                     acc
                     @ [ createPath center radius prevAngle newAngle vsi.Color settings.IsDonut ],
                     newAngle)
@@ -242,7 +405,6 @@ module Charts =
                 String.concat Environment.NewLine acc
                 |> boilerPlate true
             |> fun svg -> File.WriteAllText("C:\\ProjectData\\TestSvgs\\test_pie_chart.svg", svg)
-
 
     [<RequireQualifiedAccess>]
     module BarCharts =
@@ -308,12 +470,6 @@ module Charts =
             | None -> String.Empty
 
         let createYMarks (settings: Settings) (height: int) (width: int) (maxValue: 'T) (series: Series<'T>) =
-            let getValueLabel (v: decimal) =
-                match v with
-                | _ when v > 999m && v < 1000000m -> $"£{int v / 1000}k"
-                | _ when v > 999999m -> $"£{int v / 1000000}m"
-                | _ -> $"£{v}"
-
             let major =
                 settings.YMajorMarks
                 |> List.map
