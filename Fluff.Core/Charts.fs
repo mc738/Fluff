@@ -185,8 +185,7 @@ module Charts =
                 (fun i p ->
                     $"""<path d="M {settings.LeftOffset + (barWidth * i)} {height + 1} L {settings.LeftOffset + (barWidth * i)} {height}" fill="none" stroke="grey" style="stroke-width: 0.1" />
                         <text x="{settings.LeftOffset
-                                  + (barWidth * i)
-                                  + (barWidth / 2)}" y="{height + 3}" style="font-size: 2px; text-anchor: middle; font-family: 'roboto'">{p.Name}</text>""")
+                                  + (barWidth * i)}" y="{height + 3}" style="font-size: 2px; text-anchor: middle; font-family: 'roboto'">{p.Name}</text>""")
             |> String.concat Environment.NewLine
 
         let createXLabel (settings: Settings) (height: int) (width: int) =
@@ -256,7 +255,7 @@ module Charts =
             let width =
                 100 - settings.LeftOffset - settings.RightOffset
             // TODO might need to make float
-            let pointWidth = width / series.Points.Length
+            let pointWidth = width / (series.Points.Length - 1)
 
             let chart =
                 [ createTitle settings width
@@ -275,20 +274,9 @@ module Charts =
                             { MaxValue = maxValue
                               Value = p.Value }
 
-                    
-                    // Invert y
-                    
-                    // h / 100 * (
-                    
                     let invertedY =
                             settings.BottomOffset
                             + int ((decimal (100 - value) / decimal 100) * (decimal height))
-                    
-                    (*
-                    let invertedY =
-                            settings.BottomOffset
-                            + (int(float (100 - value) / float 100)) * height
-                    *)
                     
                     { X = settings.LeftOffset + (i * pointWidth)
                       Y = invertedY })
@@ -296,7 +284,10 @@ module Charts =
                     { Values = p |> Array.ofList
                       CurrentIndex = 0 }
             |> Lines.createBezierCommand
-            |> fun r -> [ $"""<path d="{r}" fill="none" stroke="grey" style="stroke-width: 0.3" />""" ]
+            |> fun r -> [
+                $"""<path d="{r}" fill="none" stroke="grey" style="stroke-width: 0.3" />"""
+                $"""<path d="{r} L {100 - settings.RightOffset} {100 - settings.BottomOffset} L {settings.LeftOffset} {100 - settings.BottomOffset} Z" fill="rgba(255,0,0,0.1)" stroke="none" style="stroke-width: 0.3" />"""
+            ]
             
             //|> List.map
             //    (fun (start, value, valueLabel) ->

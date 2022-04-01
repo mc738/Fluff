@@ -183,8 +183,8 @@ let lineChartTest _ =
            RightOffset = 10
            Title = None
            XLabel = None
-           YMajorMarks = []
-           YMinorMarks = [] }: LineCharts.Settings)
+           YMajorMarks = [ 50; 100 ]
+           YMinorMarks = [ 25; 75 ] }: LineCharts.Settings)
         
     let series =
         ({ Normalizer = fun p -> (float p.Value / float p.MaxValue) * 100. |> int
@@ -206,8 +206,6 @@ let lineChartTest _ =
                    Value = 80 } ] }: LineCharts.Series<int>)
         
     LineCharts.generate settings series 100
-
-    
     
     ()
 
