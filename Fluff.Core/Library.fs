@@ -53,11 +53,11 @@ type ParsableInput =
 
             let rec handler (pi: ParsableInput, nestingCount) =
                 match pi.InBounds(), pi.Is2Chars(oc1, oc2), pi.Is2Chars(cc1, cc2) with
-                | true, true, _ -> printfn "Nesting count: %i (+)" (nestingCount + 1); handler (pi.Advance(1), nestingCount + 1)
+                | true, true, _ -> handler (pi.Advance(1), nestingCount + 1)
                 | true, _, true ->
                     match nestingCount = 1 with
-                    | true ->  printfn "Nesting count: %i (-)" (nestingCount - 1); Some pi.Position;
-                    | false -> printfn "Nesting count: %i (-)" (nestingCount - 1); handler (pi.Advance(1), nestingCount - 1)
+                    | true ->  Some pi.Position;
+                    | false -> handler (pi.Advance(1), nestingCount - 1)
                 | true, false, false -> handler (pi.Advance(1), nestingCount)
                 | false, _, _ -> None
 

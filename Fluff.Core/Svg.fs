@@ -13,7 +13,7 @@ module Svg =
         type Points =
             { Values: Point array
               CurrentIndex: int }
-
+            
             member p.IsInBounds(i) = i >= 0 && i < p.Values.Length
 
             member p.Current() = p.Values.[p.CurrentIndex]
@@ -36,8 +36,7 @@ module Svg =
             member p.Advance() =
                 match p.IsInBounds(p.CurrentIndex + 1) with
                 | true ->
-                    { p with
-                          CurrentIndex = p.CurrentIndex + 1 }
+                    { p with CurrentIndex = p.CurrentIndex + 1 }
                     |> Some
                 | false -> None
 
@@ -67,7 +66,6 @@ module Svg =
                  | false -> String.Empty}
                 {content}
             </svg>"""
-
 
         /// Save content as a standalone svg file.
         let saveSvg (path: string) (content: string) =
@@ -119,18 +117,17 @@ module Svg =
 
         let createBezierCommand (points: Points) =
             points.Values
-            |> Array.mapi
-                (fun i p ->
-                    match i = 0 with
-                    | true -> $"M {p.X} {p.Y}"
-                    | false ->
-                        let point = points.Values.[i - 1]
+            |> Array.mapi (fun i p ->
+                match i = 0 with
+                | true -> $"M {p.X} {p.Y}"
+                | false ->
+                    let point = points.Values.[i - 1]
 
-                        let startP =
-                            createControlPoint point (points.Get(i - 2)) (Some p) false
+                    let startP =
+                        createControlPoint point (points.Get(i - 2)) (Some p) false
 
-                        let endP =
-                            createControlPoint p (Some point) (points.Get(i + 1)) true
+                    let endP =
+                        createControlPoint p (Some point) (points.Get(i + 1)) true
 
-                        $"C {startP.X} {startP.Y} {endP.X} {endP.Y} {p.X} {p.Y}")
+                    $"C {startP.X} {startP.Y} {endP.X} {endP.Y} {p.X} {p.Y}")
             |> String.concat " "

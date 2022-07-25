@@ -288,13 +288,6 @@ module Charts =
                 $"""<path d="{r}" fill="none" stroke="grey" style="stroke-width: 0.3" />"""
                 $"""<path d="{r} L {100 - settings.RightOffset} {100 - settings.BottomOffset} L {settings.LeftOffset} {100 - settings.BottomOffset} Z" fill="rgba(255,0,0,0.1)" stroke="none" style="stroke-width: 0.3" />"""
             ]
-            
-            //|> List.map
-            //    (fun (start, value, valueLabel) ->
-                    
-                
-            //        generateBar start barWidth height value valueLabel)
-            //[ "" ]
             |> fun r ->
                 chart @ r
                 |> String.concat Environment.NewLine
@@ -412,7 +405,8 @@ module Charts =
               Bars: Bar<'T> list }
 
         type Settings =
-            { BottomOffset: int
+            { SavePath: string
+              BottomOffset: int
               LeftOffset: int
               TopOffset: int
               RightOffset: int
@@ -535,7 +529,7 @@ module Charts =
                 chart @ r
                 |> String.concat Environment.NewLine
                 |> boilerPlate true
-            |> fun svg -> File.WriteAllText("C:\\ProjectData\\TestSvgs\\test_bar_chart.svg", svg)
+            |> fun svg -> File.WriteAllText(settings.SavePath, svg)
 
 
     [<RequireQualifiedAccess>]

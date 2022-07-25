@@ -1,6 +1,7 @@
 ﻿namespace Fluff.Core
 
 open System.Diagnostics
+open System.Text.Json
 open System.Web
 open Fluff.Core
 
@@ -45,6 +46,42 @@ module Mustache =
         | Object of Map<string, Value>
         | Array of Value list
         | Lambda of Lambda
+
+        static member FromJsonElement(element: JsonElement, inlineRenderer: string -> string) =
+            let rec elementToValue (element: JsonElement) =
+                match element.ValueKind with
+                | JsonValueKind.Array ->
+                    element.EnumerateArray()
+                    |> List.ofSeq
+                    |> List.choose elementToValue
+                    |> Value.Array
+                    |> Some // None
+                | JsonValueKind.False -> Value.Scalar "false" |> Some
+                | JsonValueKind.Null -> None
+                | JsonValueKind.Number ->
+                    element.GetDecimal()
+                    |> string
+                    |> Value.Scalar
+                    |> Some
+                | JsonValueKind.Object ->
+                    element.EnumerateObject()
+                    |> List.ofSeq
+                    |> List.choose (fun p ->
+                        elementToValue p.Value
+                        |> Option.map (fun v -> p.Name, v))
+                    |> Map.ofList
+                    |> Value.Object
+                    |> Some
+                | JsonValueKind.String ->
+                    element.GetString()
+                    |> inlineRenderer
+                    |> Value.Scalar
+                    |> Some
+                | JsonValueKind.True -> Value.Scalar "true" |> Some
+                | JsonValueKind.Undefined -> None
+                | _ -> None
+
+            elementToValue element
 
         member v.IsArrayType =
             match v with
@@ -94,6 +131,17 @@ module Mustache =
         { Values: Map<string, Value>
           Partials: Map<string, Partial> }
 
+        static member FromJson(json: string, inlineRenderer: string -> string) =
+            let jDoc = JsonDocument.Parse json
+
+            jDoc.RootElement.EnumerateObject()
+            |> List.ofSeq
+            |> List.choose (fun jp ->
+                Value.FromJsonElement(jp.Value, inlineRenderer)
+                |> Option.map (fun v -> jp.Name, v))
+            |> Map.ofList
+            |> fun r -> ({ Values = r; Partials = Map.empty }: Data)
+
         member d.TryFind(key) = d.Values.TryFind key
 
     let rec parser (pi: ParsableInput, tokens: Token list, lastSplit: int) =
@@ -103,6 +151,9 @@ module Mustache =
         | false, _ ->
             //printfn "%i" pi.Position
             tokens
+            @ [ pi.GetSlice(lastSplit, pi.Input.Length - 1)
+                |> Option.defaultValue ""
+                |> Token.Unmodified ]
         | true, true ->
             match pi.NextNonNested() with
             | Some endIndex ->
@@ -165,8 +216,7 @@ module Mustache =
           Tokens: Token list }
 
         member cs.Add(token) =
-            { cs with
-                  Tokens = cs.Tokens @ [ token ] }
+            { cs with Tokens = cs.Tokens @ [ token ] }
             |> Mode.Collect
 
     and Mode =
@@ -221,14 +271,13 @@ module Mustache =
                             | true ->
                                 // TODO this should also check for empty lists.
                                 data.TryFind s
-                                |> Option.bind
-                                    (fun v ->
-                                        match v with
-                                        | Value.Array a ->
-                                            match a.IsEmpty with
-                                            | true -> None
-                                            | false -> Some ""
-                                        | _ -> Some "")
+                                |> Option.bind (fun v ->
+                                    match v with
+                                    | Value.Array a ->
+                                        match a.IsEmpty with
+                                        | true -> None
+                                        | false -> Some ""
+                                    | _ -> Some "")
                                 |> Option.defaultWith (fun _ -> replace data lint c.Tokens)
                             | false ->
                                 // Process collection.
@@ -237,11 +286,10 @@ module Mustache =
                                     match v.GetArray() with
                                     | Ok a ->
                                         a
-                                        |> List.map
-                                            (fun v ->
-                                                match v.GetObject() with
-                                                | Ok o -> replace { Values = o; Partials = data.Partials } lint c.Tokens
-                                                | Error _ -> "")
+                                        |> List.map (fun v ->
+                                            match v.GetObject() with
+                                            | Ok o -> replace { Values = o; Partials = data.Partials } lint c.Tokens
+                                            | Error _ -> "")
                                         |> String.concat ""
                                     | Error _ -> "" // This should not happen.
                                 | Some v when v.IsObjectType ->

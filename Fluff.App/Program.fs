@@ -139,7 +139,8 @@ let pieChartTest _ =
   
 let barChartTest _ =
     let settings =
-        ({ LeftOffset = 10
+        ({ SavePath = "C:\\ProjectData\\TestSvgs\\test_bar_chart.svg"
+           LeftOffset = 10
            BottomOffset = 10
            TopOffset = 10
            RightOffset = 10
