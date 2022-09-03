@@ -179,7 +179,7 @@ module Charts =
 
         let createXMarks (settings: Settings) (series: Series<'T>) (height: int) (barWidth: int) =
             let height = height + settings.TopOffset
-
+    
             series.Points
             |> List.mapi
                 (fun i p ->

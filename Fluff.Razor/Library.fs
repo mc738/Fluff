@@ -1,6 +1,6 @@
 ﻿namespace Fluff.Razor
 
-open Fluff.Core.Svg.Charts
+open Fluff.Core.Charts
 open Microsoft.AspNetCore.Components
 open Microsoft.AspNetCore.Components.Rendering
 

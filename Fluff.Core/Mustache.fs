@@ -40,6 +40,8 @@ module Mustache =
             | '&' -> NonEscapedVariable(input.[1..].Trim())
             | '{' when input.[input.Length - 1] = '}' -> NonEscapedVariable(input.Substring(1, input.Length - 2).Trim())
             | _ -> EscapedVariable input
+            
+    type Template = Token list
 
     type Value =
         | Scalar of string
@@ -130,6 +132,8 @@ module Mustache =
     type Data =
         { Values: Map<string, Value>
           Partials: Map<string, Partial> }
+        
+        static member Empty() = { Values = Map.empty; Partials = Map.empty }
 
         static member FromJson(json: string, inlineRenderer: string -> string) =
             let jDoc = JsonDocument.Parse json
