@@ -294,7 +294,6 @@ module Charts =
                 |> boilerPlate true
             |> fun svg -> File.WriteAllText("C:\\ProjectData\\TestSvgs\\test_line_chart.svg", svg)
 
-
     [<RequireQualifiedAccess>]
     module PieCharts =
 
@@ -530,7 +529,6 @@ module Charts =
                 |> String.concat Environment.NewLine
                 |> boilerPlate true
             |> fun svg -> File.WriteAllText(settings.SavePath, svg)
-
 
     [<RequireQualifiedAccess>]
     module FunnelCharts =

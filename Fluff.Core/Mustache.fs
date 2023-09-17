@@ -1,13 +1,14 @@
 ﻿namespace Fluff.Core
 
-open System.Diagnostics
-open System.Text.Json
-open System.Web
-open Fluff.Core
-
 [<RequireQualifiedAccess>]
 module Mustache =
 
+    open System.IO
+    open System.Text
+    open System.Text.Json
+    open System.Web
+    open Fluff.Core
+    
     type Failure =
         | VariableNotFound
         | VariableNotScalar of string
@@ -84,7 +85,7 @@ module Mustache =
                 | _ -> None
 
             elementToValue element
-
+        
         member v.IsArrayType =
             match v with
             | Array _ -> true
@@ -124,6 +125,24 @@ module Mustache =
             match v with
             | Lambda l -> Ok l
             | _ -> Error()
+            
+        member v.ToJson(writer: Utf8JsonWriter) =
+            match v with
+            | Value.Scalar v ->
+                writer.WriteStringValue v
+            | Value.Object m ->
+                writer.WriteStartObject()
+                m |> Map.iter (fun k v ->
+                    writer.WritePropertyName(k)
+                    v.ToJson(writer))
+                writer.WriteEndObject()
+            | Value.Array a ->
+                writer.WriteStartArray()
+                a |> List.iter (fun v -> v.ToJson(writer))
+                writer.WriteEndArray()
+            | Value.Lambda l ->
+                // TODO not handled yet.
+                ()
 
     and Lambda = Map<string, Value> -> Token list -> string
 
@@ -145,7 +164,26 @@ module Mustache =
                 |> Option.map (fun v -> jp.Name, v))
             |> Map.ofList
             |> fun r -> ({ Values = r; Partials = Map.empty }: Data)
-
+            
+        member d.ToJson() =
+            use ms = new MemoryStream()
+            
+            use writer = new Utf8JsonWriter(ms)
+            
+            writer.WriteStartObject()
+            d.Values
+            |> Map.iter (fun k v ->
+                writer.WritePropertyName(k)
+                v.ToJson(writer))
+            
+            writer.WriteEndObject()
+            writer.Flush()
+            
+            ms.ToArray() |> Encoding.UTF8.GetString
+            
+            
+         
+            
         member d.TryFind(key) = d.Values.TryFind key
 
     let rec parser (pi: ParsableInput, tokens: Token list, lastSplit: int) =
