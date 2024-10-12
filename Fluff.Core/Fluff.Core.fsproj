@@ -9,10 +9,10 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Include="Library.fs" />
-        <Compile Include="Mustache.fs" />
-        <Compile Include="Svg.fs" />
-        <Compile Include="Charts.fs" />
+        <Compile Include="Library.fs"/>
+        <Compile Include="Mustache.fs"/>
+        <Compile Include="Svg.fs"/>
+        <Compile Include="Charts.fs"/>
     </ItemGroup>
 
 </Project>
